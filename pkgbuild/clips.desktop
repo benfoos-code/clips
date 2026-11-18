@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Clips
+Name[da]=Klip
+Comment=Browse clipboard history and copy an entry back
+Comment[da]=Gennemse klippebordshistorik og kopiér en post tilbage
+Exec=clips
+Icon=clips
+Terminal=false
+Categories=Utility;
+Keywords=clipboard;history;paste;copy;
+StartupWMClass=clips

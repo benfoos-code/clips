@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+# Installs clips into the user's home, which is where the Omarchy launcher looks
+# too. No password needed. Use bin/install for a system-wide Arch package.
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+
+"$ROOT/bin/build"
+
+install -Dm755 "$ROOT/build/clips" "$HOME/.local/bin/clips"
+install -Dm644 "$ROOT/pkgbuild/clips.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/clips.svg"
+install -Dm644 "$ROOT/pkgbuild/clips.desktop" "$HOME/.local/share/applications/clips.desktop"
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+fi
+
+echo "Installed clips to ~/.local/bin/clips and ~/.local/share/applications/clips.desktop"

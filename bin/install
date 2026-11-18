@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+# Installs clips as a system-wide Arch package. Needs root, so run it from a
+# terminal where makepkg can ask for the password. Use bin/install-user to put
+# the app in ~/.local instead, without a password.
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+"$ROOT/bin/build"
+cd "$ROOT/pkgbuild"
+exec makepkg -fsi "$@"

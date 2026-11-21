@@ -22,6 +22,9 @@ read-only: the shell owns the file, so Clips never writes to it.
 | `?`            | Show every shortcut                 |
 | `Q`            | Quit                                |
 
+Copy and Open are on screen next to the search box too, and the footer keeps
+the common keys visible. `?` shows the full list.
+
 Copying a text entry puts it back on the clipboard with `wl-copy`; copying an
 image puts the image back. Opening an entry hands it to Omarchy's own opener
 (`omarchy-clipboard-open`), so a URL opens in the browser, text opens in the

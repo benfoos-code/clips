@@ -185,12 +185,37 @@ ApplicationWindow {
                         }
                     }
 
-                    TextField {
-                        id: searchField
+                    RowLayout {
                         Layout.fillWidth: true
-                        placeholderText: qsTr("Search")
-                        selectByMouse: true
-                        onTextChanged: win.recompute()
+                        spacing: 8
+
+                        TextField {
+                            id: searchField
+                            Layout.fillWidth: true
+                            placeholderText: qsTr("Search")
+                            selectByMouse: true
+                            onTextChanged: win.recompute()
+                        }
+
+                        // The two actions are on screen as well as on keys, so
+                        // they can be found without opening the shortcut sheet.
+                        Button {
+                            text: qsTr("Copy")
+                            enabled: win.filtered.length > 0
+                            onClicked: win.copyCurrent()
+                            ToolTip.text: qsTr("Space")
+                            ToolTip.visible: hovered
+                            ToolTip.delay: 400
+                        }
+
+                        Button {
+                            text: qsTr("Open")
+                            enabled: win.filtered.length > 0
+                            onClicked: win.openCurrent()
+                            ToolTip.text: qsTr("Enter")
+                            ToolTip.visible: hovered
+                            ToolTip.delay: 400
+                        }
                     }
                 }
             }
@@ -244,18 +269,58 @@ ApplicationWindow {
                 }
             }
 
+            // Always-visible legend: the common commands are easy to find
+            // without opening the full `?` sheet.
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: footer.implicitHeight + 14
+                implicitHeight: 42
                 color: "#141417"
 
-                Text {
+                Row {
                     id: footer
                     anchors.centerIn: parent
-                    textFormat: Text.PlainText
-                    text: qsTr("Press ? for shortcuts")
-                    color: "#6f6f78"
-                    font.pixelSize: 12
+                    spacing: 18
+
+                    Repeater {
+                        model: [
+                            { key: "Space", what: qsTr("Copy") },
+                            { key: "Enter", what: qsTr("Open") },
+                            { key: "/", what: qsTr("Search") },
+                            { key: "?", what: qsTr("All shortcuts") }
+                        ]
+
+                        delegate: Row {
+                            spacing: 6
+
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: keyLabel.width + 12
+                                height: 20
+                                radius: Math.min(4, theme.radius)
+                                color: "#26262c"
+                                border.color: "#3a3a42"
+                                border.width: 1
+
+                                Text {
+                                    id: keyLabel
+                                    anchors.centerIn: parent
+                                    textFormat: Text.PlainText
+                                    text: modelData.key
+                                    color: theme.accent
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                textFormat: Text.PlainText
+                                text: modelData.what
+                                color: "#9a9aa2"
+                                font.pixelSize: 12
+                            }
+                        }
+                    }
                 }
             }
         }

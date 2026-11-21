@@ -49,15 +49,39 @@ bin/install        # a system-wide Arch package, from a terminal
 ## Build and test
 
 ```sh
-bin/build   # qmake6 + make into build/clips
-bin/test    # the Qt Test binary, run offscreen
+bin/build      # qmake6 + make into build/clips
+bin/test       # the Qt Test binary, run offscreen, then the CLI checks
+bin/test-cli   # just the CLI checks, with a fake wl-copy and opener
 ```
 
 The window follows the Omarchy accent and Hyprland's window rounding live, and
 the strings follow the language picked under Setup > Language (`src/i18n/`).
 
-`clips --history <path>` reads another history file, which is handy for looking
-at a snapshot without touching the live one.
+## From the command line
+
+The same binary has a headless interface for scripts and AI agents. Any command
+or command-line option skips the window entirely, and every command is read-only
+with respect to the history file.
+
+```sh
+clips list [--limit N] [--json]   # newest first, text and images
+clips search <query> [--json]     # filter the same list
+clips latest [--json]             # only the newest clip
+clips copy <index>                # put a clip back with wl-copy
+clips open <index>                # open it with omarchy-clipboard-open
+```
+
+`--history <path>` works with every command, before or after it, so an agent can
+inspect a saved snapshot without touching the live file. `--json` returns the
+same fields every time: `count` plus `entries` of `index`, `time`, `type`, and
+`preview`. Success exits 0; failure prints one line to stderr and exits non-zero.
+Omarchy only stores a time for images, so `time` is an empty string for text
+clips (shown as `—` in plain output).
+
+`clips skill install` installs the bundled agent manual to
+`~/.agents/skills/clips/SKILL.md` and links it into `~/.claude/skills/clips`
+when `~/.claude` exists. `clips skill` prints the same manual without installing
+it; `clips help [command]` lists the commands and their options.
 
 ## License
 

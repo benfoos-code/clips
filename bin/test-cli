@@ -1,0 +1,123 @@
+#!/bin/sh
+# Exercise the real binary headlessly, with a fake wl-copy and opener. An
+# invalid Qt platform plugin would abort a windowed run, so success also proves
+# that no GUI was created.
+set -eu
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+"$ROOT/bin/build" >/dev/null
+
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+mkdir -p "$TMP/bin" "$TMP/home/.claude"
+printf 'IMAGEDATA' > "$TMP/picture.png"
+
+cat > "$TMP/history.json" <<JSON
+[
+  {"type": "text", "text": "newest link https://example.com/a"},
+  {"type": "text", "text": "older note"},
+  {"type": "image", "path": "$TMP/picture.png", "mime": "image/png", "capturedAt": "Friday 18:04"}
+]
+JSON
+
+cat > "$TMP/bin/wl-copy" <<'SH'
+#!/bin/sh
+printf '%s\n' "$*" > "$CLIPS_COPY_ARGS"
+cat > "$CLIPS_COPY_OUT"
+SH
+cat > "$TMP/bin/omarchy-clipboard-open" <<'SH'
+#!/bin/sh
+printf '%s\n' "$*" > "$CLIPS_OPEN_ARGS"
+SH
+chmod +x "$TMP/bin/wl-copy" "$TMP/bin/omarchy-clipboard-open"
+
+export PATH="$TMP/bin:$PATH"
+export QT_QPA_PLATFORM=not-a-real-platform
+export CLIPS_COPY_ARGS="$TMP/copy.args"
+export CLIPS_COPY_OUT="$TMP/copied.bin"
+export CLIPS_OPEN_ARGS="$TMP/open.args"
+CLIPS="$ROOT/build/clips"
+HISTORY="$TMP/history.json"
+
+fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
+
+sha256sum "$HISTORY" | cut -d' ' -f1 > "$TMP/before.sha"
+
+"$CLIPS" --history "$HISTORY" list --json > "$TMP/list.json"
+"$CLIPS" list --history "$HISTORY" --json --limit 2 > "$TMP/limit.json"
+"$CLIPS" search note --json --history "$HISTORY" > "$TMP/search.json"
+"$CLIPS" search image --json --history "$HISTORY" > "$TMP/images.json"
+"$CLIPS" latest --history "$HISTORY" --json > "$TMP/latest.json"
+"$CLIPS" --history "$HISTORY" list > "$TMP/list.txt"
+
+"$CLIPS" --history "$HISTORY" copy 0 > "$TMP/copy.txt"
+cp "$TMP/copied.bin" "$TMP/copied-text.bin"
+cp "$TMP/copy.args" "$TMP/copy-text.args"
+"$CLIPS" --history "$HISTORY" copy 2 > "$TMP/copy-image.txt"
+cp "$TMP/copied.bin" "$TMP/copied-image.bin"
+cp "$TMP/copy.args" "$TMP/copy-image.args"
+"$CLIPS" --history "$HISTORY" open 0 > "$TMP/open.txt"
+
+"$CLIPS" skill > "$TMP/skill.md"
+HOME="$TMP/home" "$CLIPS" skill install > "$TMP/skill-install.txt"
+[ -f "$TMP/home/.agents/skills/clips/SKILL.md" ] || fail 'skill was not installed'
+[ -L "$TMP/home/.claude/skills/clips" ] || fail 'skill was not linked into ~/.claude'
+
+set +e
+"$CLIPS" --history "$HISTORY" copy 99 > "$TMP/bad.out" 2> "$TMP/bad.err"; BAD=$?
+"$CLIPS" --history "$HISTORY" list --limit nope > "$TMP/limit.out" 2> "$TMP/limit.err"; LIMIT=$?
+"$CLIPS" --history "$TMP/missing.json" list > "$TMP/missing.out" 2> "$TMP/missing.err"; MISSING=$?
+"$CLIPS" list --bogus --history "$HISTORY" > "$TMP/bogus.out" 2> "$TMP/bogus.err"; BOGUS=$?
+"$CLIPS" --json > "$TMP/command.out" 2> "$TMP/command.err"; NOCOMMAND=$?
+set -e
+
+[ "$BAD" -ne 0 ] || fail 'a bad index succeeded'
+[ "$LIMIT" -ne 0 ] || fail 'a bad --limit succeeded'
+[ "$MISSING" -ne 0 ] || fail 'a missing history succeeded'
+[ "$BOGUS" -ne 0 ] || fail 'an unknown option succeeded'
+[ "$NOCOMMAND" -ne 0 ] || fail '--json without a command succeeded'
+for name in bad limit missing bogus command; do
+    [ "$(wc -l < "$TMP/$name.err" | tr -d ' ')" -eq 1 ] || fail "$name error was not one line"
+done
+
+sha256sum "$HISTORY" | cut -d' ' -f1 > "$TMP/after.sha"
+
+python3 - "$TMP" <<'PY'
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+def load(name):
+    return json.loads((root / name).read_text())
+
+listing = load("list.json")
+assert listing["count"] == 3
+entries = listing["entries"]
+assert [e["index"] for e in entries] == [0, 1, 2]
+assert [e["type"] for e in entries] == ["text", "text", "image"]
+assert all(set(e) == {"index", "time", "preview", "type"} for e in entries)
+assert entries[0]["time"] == "" and entries[2]["time"] == "Friday 18:04"
+assert load("limit.json")["count"] == 2
+assert load("latest.json")["count"] == 1
+assert load("latest.json")["entries"][0]["index"] == 0
+assert [(e["index"], e["type"]) for e in load("search.json")["entries"]] == [(1, "text")]
+assert [(e["index"], e["type"]) for e in load("images.json")["entries"]] == [(2, "image")]
+
+visible = (root / "list.txt").read_text()
+assert "IDX" in visible and "TIME" in visible and "TYPE" in visible and "PREVIEW" in visible
+assert "—" in visible and "Friday 18:04" in visible
+
+assert "Copied 0:" in (root / "copy.txt").read_text()
+assert "Copied 2:" in (root / "copy-image.txt").read_text()
+assert "Opened 0:" in (root / "open.txt").read_text()
+assert (root / "copied-text.bin").read_bytes() == b"newest link https://example.com/a"
+assert "image/png" in (root / "copy-image.args").read_text()
+assert (root / "copied-image.bin").read_bytes() == b"IMAGEDATA"
+assert (root / "open.args").read_text().strip() == "--history-index 0"
+assert "name: clips" in (root / "skill.md").read_text()
+
+assert (root / "before.sha").read_text() == (root / "after.sha").read_text(), "history file changed"
+PY
+
+printf 'CLI checks passed\n'

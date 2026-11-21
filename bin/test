@@ -8,3 +8,5 @@ cd "$ROOT/build/tests"
 qmake6 "$ROOT/tests/clips_tests.pro"
 make -j"$(nproc)"
 QT_QPA_PLATFORM=offscreen ./clips_tests
+
+"$ROOT/bin/test-cli"

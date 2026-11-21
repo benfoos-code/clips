@@ -1,5 +1,6 @@
 // clips — browse Omarchy's clipboard history and copy an entry back.
 
+#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
@@ -9,13 +10,27 @@
 #include <QUrl>
 
 #include "backend.h"
+#include "cli.h"
 #include "theme.h"
 #include "translator.h"
 
 int main(int argc, char *argv[]) {
+    // Decide before Qt creates any GUI: commands are plain QCoreApplication
+    // processes, so scripts and agents never need a display or open a window.
+    QStringList raw;
+    for (int i = 0; i < argc; ++i)
+        raw << QString::fromLocal8Bit(argv[i]);
+
+    if (Cli::isCommand(raw)) {
+        QCoreApplication app(argc, argv);
+        app.setApplicationName("clips");
+        app.setApplicationVersion(Cli::version());
+        return Cli::run(app.arguments());
+    }
+
     QGuiApplication app(argc, argv);
     app.setApplicationName("clips");
-    app.setApplicationVersion("0.1.0");
+    app.setApplicationVersion(Cli::version());
 
     // Matches the window to clips.desktop, so the compositor (Wayland app_id)
     // and the launcher pick up the installed icon.
@@ -24,21 +39,17 @@ int main(int argc, char *argv[]) {
 
     QQuickStyle::setStyle("Material");
 
-    // --history points the app at another history file, for tests and for
-    // looking at a snapshot without touching the live one.
-    QString historyPath;
-    const QStringList arguments = app.arguments();
-    for (int i = 1; i + 1 < arguments.size(); ++i)
-        if (arguments.at(i) == QLatin1String("--history"))
-            historyPath = arguments.at(i + 1);
-
     // Installed before anything is translated, and every qsTr() binding is
     // re-evaluated when the Omarchy language changes.
     Translator translator;
     app.installTranslator(&translator);
 
     Theme theme;
-    Backend backend(historyPath);
+
+    // --history points the app at another history file, for tests and for
+    // looking at a snapshot without touching the live one. It still opens the
+    // window when given alone, exactly as before.
+    Backend backend(Cli::historyPath(app.arguments()));
 
     QQmlApplicationEngine engine;
     QObject::connect(&translator, &Translator::changed, &engine, &QQmlEngine::retranslate);

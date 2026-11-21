@@ -5,5 +5,5 @@ TEMPLATE = app
 
 INCLUDEPATH += ../src
 
-HEADERS += ../src/backend.h ../src/theme.h ../src/translator.h
-SOURCES += clips_tests.cpp ../src/backend.cpp ../src/theme.cpp ../src/translator.cpp
+HEADERS += ../src/backend.h ../src/cli.h ../src/theme.h ../src/translator.h
+SOURCES += clips_tests.cpp ../src/backend.cpp ../src/cli.cpp ../src/theme.cpp ../src/translator.cpp

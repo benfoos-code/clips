@@ -8,5 +8,6 @@
         <file alias="HelpOverlay.qml">HelpOverlay.qml</file>
         <file alias="i18n/en.json">i18n/en.json</file>
         <file alias="i18n/da.json">i18n/da.json</file>
+        <file alias="skill.md">skill.md</file>
     </qresource>
 </RCC>

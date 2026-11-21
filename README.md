@@ -1,6 +1,7 @@
 # Clips
 
-Browse the Omarchy clipboard history and copy an entry back.
+Browse the Omarchy clipboard history and copy an entry back, from a quiet,
+refined window that stays out of the way.
 
 ![Clips showing a clipboard history](screenshot.png)
 
@@ -22,8 +23,10 @@ read-only: the shell owns the file, so Clips never writes to it.
 | `?`            | Show every shortcut                 |
 | `Q`            | Quit                                |
 
-Copy and Open are on screen next to the search box too, and the footer keeps
-the common keys visible. `?` shows the full list.
+Copy and Open are on screen next to the search box, each with its key shown on
+the button; on a narrow window the keycaps step aside so search keeps its room.
+The footer keeps the common keys visible, and `?` opens a grouped shortcut
+sheet. Actions confirm in a floating pill, with errors in a different colour.
 
 Copying a text entry puts it back on the clipboard with `wl-copy`; copying an
 image puts the image back. Opening an entry hands it to Omarchy's own opener

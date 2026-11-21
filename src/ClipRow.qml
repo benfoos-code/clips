@@ -1,13 +1,23 @@
 import QtQuick
 
-// One row in the clipboard list. It only shows a preview and reports taps; the
-// backend does the copying and the opening.
+// One clip in the list: a small, quiet card that becomes distinctly "active"
+// when the keyboard lands on it. The backend still owns every action.
 Item {
     id: row
 
     required property var modelData
     required property int index
     property bool current: false
+
+    property var tokens: QtObject {
+        readonly property color accent: "#FFD60A"
+        readonly property color raised: "#1c1c20"
+        readonly property color line: Qt.rgba(1, 1, 1, 0.08)
+        readonly property color primaryText: "#f5f5f7"
+        readonly property color subtext: "#a1a1a6"
+        readonly property color faint: "#6e6e73"
+        readonly property int smallRadius: 0
+    }
 
     signal activated()
     signal selected()
@@ -17,7 +27,7 @@ Item {
     readonly property string capturedAt: row.modelData.capturedAt !== undefined ? row.modelData.capturedAt : ""
     readonly property int bytes: row.modelData.bytes !== undefined ? row.modelData.bytes : 0
 
-    implicitHeight: 58
+    implicitHeight: 72
     width: ListView.view ? ListView.view.width : implicitWidth
 
     function formatBytes(value) {
@@ -35,31 +45,64 @@ Item {
         return scaled.toLocaleString(Qt.locale(), 'f', 1) + " " + units[unit]
     }
 
+    // The card sits inside the row so the list keeps a steady rhythm and the
+    // selection reads as a layer rather than a block of colour.
     Rectangle {
         anchors.fill: parent
-        color: row.current ? Qt.rgba(1, 1, 1, 0.07) : (hover.hovered ? Qt.rgba(1, 1, 1, 0.03) : "transparent")
+        anchors.leftMargin: 12
+        anchors.rightMargin: 12
+        anchors.topMargin: 5
+        anchors.bottomMargin: 5
+        radius: row.tokens.smallRadius
+        color: row.current ? Qt.rgba(Qt.color(row.tokens.accent).r,
+                                     Qt.color(row.tokens.accent).g,
+                                     Qt.color(row.tokens.accent).b, 0.13)
+                           : hover.hovered ? Qt.rgba(1, 1, 1, 0.05)
+                                           : Qt.rgba(1, 1, 1, 0.022)
+        border.color: row.current ? Qt.rgba(Qt.color(row.tokens.accent).r,
+                                             Qt.color(row.tokens.accent).g,
+                                             Qt.color(row.tokens.accent).b, 0.5)
+                                  : row.tokens.line
+        border.width: 1
+
+        Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
+        Behavior on border.color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
     }
 
     Rectangle {
         visible: row.current
-        width: 3
-        color: theme.accent
+        width: 2
         anchors.left: parent.left
+        anchors.leftMargin: 12
         anchors.top: parent.top
+        anchors.topMargin: 14
         anchors.bottom: parent.bottom
+        anchors.bottomMargin: 14
+        color: row.tokens.accent
     }
 
-    // A thumbnail for an image entry, and a simple mark for a text one.
+    // Hairline cell divider, inset like a table cell.
     Rectangle {
-        id: chip
+        anchors.bottom: parent.bottom
         anchors.left: parent.left
-        anchors.leftMargin: 14
+        anchors.leftMargin: 24
+        anchors.right: parent.right
+        anchors.rightMargin: 24
+        height: 1
+        color: row.tokens.line
+        visible: ListView.view !== null && row.index < ListView.view.count - 1
+    }
+
+    Rectangle {
+        id: thumb
+        anchors.left: parent.left
+        anchors.leftMargin: 24
         anchors.verticalCenter: parent.verticalCenter
-        width: 40
-        height: 40
-        radius: Math.min(6, theme.radius)
-        color: "#26262c"
-        border.color: "#33333a"
+        width: 44
+        height: 44
+        radius: row.tokens.smallRadius
+        color: row.tokens.raised
+        border.color: row.tokens.line
         border.width: 1
         clip: true
 
@@ -74,55 +117,76 @@ Item {
             cache: true
         }
 
-        Text {
+        Icon {
             anchors.centerIn: parent
             visible: !row.isImage
-            text: "T"
-            color: theme.accent
-            font.pixelSize: 16
-            font.bold: true
+            name: "text"
+            width: 22
+            height: 22
+            weight: 1.4
+            tint: row.tokens.accent
         }
     }
 
     Column {
-        id: texts
-        anchors.left: chip.right
-        anchors.leftMargin: 12
+        anchors.left: thumb.right
+        anchors.leftMargin: 14
         anchors.right: meta.left
         anchors.rightMargin: 12
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 3
+        spacing: 4
 
         Text {
             width: parent.width
             textFormat: Text.PlainText
             text: row.isImage ? qsTr("Image") : row.preview
-            color: "#ececee"
+            color: row.tokens.primaryText
+            font.pixelSize: 14
+            font.weight: Font.Medium
             elide: Text.ElideRight
             maximumLineCount: 2
             wrapMode: Text.Wrap
-            font.pixelSize: 14
         }
 
         Text {
             width: parent.width
             textFormat: Text.PlainText
-            text: row.isImage ? row.capturedAt : row.formatBytes(row.bytes)
-            color: "#8a8a92"
-            elide: Text.ElideRight
+            // Reading the language here re-formats the size after a language
+            // switch, so numbers follow the desktop's locale.
+            text: {
+                translator.language
+                return row.isImage ? row.capturedAt : row.formatBytes(row.bytes)
+            }
+            color: row.tokens.subtext
             font.pixelSize: 12
+            elide: Text.ElideRight
         }
     }
 
-    Text {
+    Row {
         id: meta
         anchors.right: parent.right
-        anchors.rightMargin: 14
+        anchors.rightMargin: 24
         anchors.verticalCenter: parent.verticalCenter
-        textFormat: Text.PlainText
-        text: row.isImage ? row.modelData.mime : ""
-        color: "#6f6f78"
-        font.pixelSize: 11
+        spacing: 10
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            textFormat: Text.PlainText
+            text: row.isImage ? row.modelData.mime : ""
+            color: row.tokens.faint
+            font.pixelSize: 11
+        }
+
+        KeyCap {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: row.current
+            label: "↵"
+            accent: row.tokens.accent
+            fill: Qt.rgba(1, 1, 1, 0.06)
+            stroke: Qt.rgba(1, 1, 1, 0.12)
+            corner: row.tokens.smallRadius
+        }
     }
 
     HoverHandler { id: hover }

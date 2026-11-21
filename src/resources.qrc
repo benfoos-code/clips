@@ -2,6 +2,9 @@
     <qresource prefix="/">
         <file alias="Main.qml">Main.qml</file>
         <file alias="ClipRow.qml">ClipRow.qml</file>
+        <file alias="Icon.qml">Icon.qml</file>
+        <file alias="KeyCap.qml">KeyCap.qml</file>
+        <file alias="ToolAction.qml">ToolAction.qml</file>
         <file alias="HelpOverlay.qml">HelpOverlay.qml</file>
         <file alias="i18n/en.json">i18n/en.json</file>
         <file alias="i18n/da.json">i18n/da.json</file>

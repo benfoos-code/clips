@@ -1,6 +1,9 @@
 {
   "Clips": "Klip",
   "Search": "Søg",
+  "Search clips": "Søg i klip",
+  "Recent": "Nyligt",
+  "Live": "Live",
   "Image": "Billede",
   "Copied to clipboard": "Kopieret til klippebordet",
   "Opened": "Åbnet",
@@ -15,7 +18,9 @@
   "Could not open the entry": "Kunne ikke åbne posten",
   "Clipboard history not found": "Klippebordshistorik blev ikke fundet",
   "No clipboard history yet": "Ingen klippebordshistorik endnu",
+  "Copied clips will appear here": "Kopierede klip vises her",
   "No matches": "Ingen match",
+  "Try a different search": "Prøv en anden søgning",
   "Keyboard shortcuts": "Tastaturgenveje",
   "All shortcuts": "Alle genveje",
   "Move": "Flyt",
@@ -24,6 +29,9 @@
   "Open": "Åbn",
   "Clear search": "Ryd søgning",
   "Shortcuts": "Genveje",
+  "Navigation": "Navigation",
+  "Actions": "Handlinger",
+  "General": "Generelt",
   "Quit": "Afslut",
   "%n clips": { "one": "%n klip", "other": "%n klip" }
 }
